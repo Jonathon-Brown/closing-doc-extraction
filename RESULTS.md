@@ -195,47 +195,58 @@ the reference labels were produced by `qwen3:32b`, so this measures agreement wi
 the label-generator on real documents, not agreement with human ground truth; the
 documents, however, are genuinely unlike the training templates.
 
-Fine-tuned model, no schema prompt, on the 10 `real-forms` only:
+Fine-tuned model, no schema prompt, on the 10 `real-forms` only. The eval was
+first run at a 2048-token generation cap and then rerun at 4096. At 2048, one
+dense real closing disclosure was cut off mid-JSON; that is a generation-budget
+artifact, not a model error, so the 4096 figures are the ones that should be read
+as the result. Both are shown so the change is visible.
 
-| Metric | Fine-tuned, no schema prompt |
-| --- | --- |
-| Valid-JSON rate | 90.00% |
-| Schema-conformance rate | 90.00% |
-| Field accuracy (overall) | 88.75% |
+| Metric | 2048-token cap | 4096-token cap |
+| --- | --- | --- |
+| Valid-JSON rate | 90.00% | 100.00% |
+| Schema-conformance rate | 90.00% | 90.00% |
+| Field accuracy (overall) | 88.75% | 96.25% |
 
-| Field | Accuracy |
-| --- | --- |
-| document_type | 90.00% |
-| parties.grantor | 90.00% |
-| parties.grantee | 90.00% |
-| parties.borrower | 90.00% |
-| parties.lender | 90.00% |
-| property_address | 90.00% |
-| legal_description | 90.00% |
-| loan_amount | 80.00% |
-| purchase_price | 90.00% |
-| dates.executed | 90.00% |
-| dates.recorded | 90.00% |
-| dates.closing | 80.00% |
-| recording_info.book | 90.00% |
-| recording_info.page | 90.00% |
-| recording_info.instrument | 90.00% |
-| documentary_stamp_tax | 90.00% |
+| Field | 2048-token cap | 4096-token cap |
+| --- | --- | --- |
+| document_type | 90.00% | 100.00% |
+| parties.grantor | 90.00% | 90.00% |
+| parties.grantee | 90.00% | 90.00% |
+| parties.borrower | 90.00% | 100.00% |
+| parties.lender | 90.00% | 100.00% |
+| property_address | 90.00% | 90.00% |
+| legal_description | 90.00% | 90.00% |
+| loan_amount | 80.00% | 90.00% |
+| purchase_price | 90.00% | 100.00% |
+| dates.executed | 90.00% | 100.00% |
+| dates.recorded | 90.00% | 100.00% |
+| dates.closing | 80.00% | 90.00% |
+| recording_info.book | 90.00% | 100.00% |
+| recording_info.page | 90.00% | 100.00% |
+| recording_info.instrument | 90.00% | 100.00% |
+| documentary_stamp_tax | 90.00% | 100.00% |
 
 With only 10 documents, each one is worth 10 percentage points, so these numbers
-are coarse. Two failure modes account for the gap:
+are coarse.
 
-- One of the ten (a dense real CFPB sample closing disclosure) hit the 2048-token
-  generation cap and was cut off mid-JSON, so it fails valid-JSON, schema
-  conformance, and every field at once. This is the single largest contributor to
-  the drop and is a real out-of-distribution effect: the real forms are longer and
-  denser than the templates the model trained on. Raising the generation cap would
-  likely recover this example.
-- One other document (a filled CFPB sample) disagreed with the `qwen3:32b`
-  reference on `loan_amount` and `dates.closing`.
+At the 2048 cap, the dominant failure was output truncation: one dense real CFPB
+closing disclosure hit the cap and was cut off mid-JSON, failing valid-JSON,
+schema conformance, and every field at once. Raising the cap to 4096 removed that
+artifact entirely — valid-JSON returns to 100% and overall field accuracy rises
+from 88.75% to 96.25%. The real forms are longer and denser than the synthetic
+templates the model trained on, so they need more output budget; this is a
+serving-configuration lesson, not a limit of the adapter.
 
-Every other real form (8 of 10) was extracted with full schema conformance and
-16/16 fields matching the reference. The drop from 100% (in-distribution) to
-roughly 89% (out-of-distribution) is modest but real, and its dominant cause is
-output truncation rather than misextraction — the kind of thing that only shows
-up on documents unlike the training set.
+Two genuine (non-artifact) issues remain at 4096, on two different documents:
+
+- One filled CFPB sample disagrees with the `qwen3:32b` reference on `loan_amount`
+  and `dates.closing`.
+- The formerly-truncated document now parses in full but fails schema conformance
+  and misses four fields (`parties.grantor`, `parties.grantee`, `property_address`,
+  `legal_description`) — a real extraction/structure error on genuinely
+  out-of-distribution text, not a truncation.
+
+So the honest out-of-distribution figure is roughly 96% field accuracy with 90%
+schema conformance once the generation budget is adequate: strong, but not the
+saturated 100% seen in-distribution, and the residual errors are genuine model
+behavior on unfamiliar documents rather than measurement artifacts.
