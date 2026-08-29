@@ -18,5 +18,8 @@ data/
 *.pth
 *.npz
 
+# Eval logs
+*.log
+
 # OS / editor
 .DS_Store
