@@ -1,0 +1,4 @@
+mlx-lm            # LoRA training and inference on Apple Silicon
+pymupdf           # PDF text extraction (pipeline/extract.py)
+python-docx       # DOCX text extraction and generation
+fpdf2             # synthetic PDF generation (pipeline/build_fl_corpus.py)

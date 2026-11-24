@@ -20,7 +20,8 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-DEFAULT_TEST = Path.home() / "private-ai-demo" / "finetune" / "test.jsonl"
+# Written by pipeline/generate.py (see pipeline/paths.py). Override with --test.
+DEFAULT_TEST = Path(__file__).resolve().parent / "work" / "finetune" / "test.jsonl"
 
 # Built-in system prompt describing the exact target schema. Selected with
 # --system-prompt SCHEMA. Fully specifies key names, nesting, types, the
