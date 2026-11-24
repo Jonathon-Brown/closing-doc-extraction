@@ -23,3 +23,7 @@ data/
 
 # OS / editor
 .DS_Store
+
+# Pipeline working directory (generated corpus, labels, splits) and eval output
+work/
+results/
